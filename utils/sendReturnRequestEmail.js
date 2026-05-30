@@ -14,48 +14,43 @@ module.exports = async function sendReturnRequestEmail(order, reason, type) {
 
     if (!user?.email) return;
 
-    const orderDetails = products
-      .map(
-        (p) => `
-        <div style="margin-bottom:10px">
-          <img src="${p.image}" alt="${p.title}" width="80"><br>
-          <strong>${p.title}</strong> (${p.size}) — Qty: ${p.quantity}
-        </div>
-      `
-      )
-      .join("");
+    const title = type === "exchange" ? "Exchange Request Received" : "Return Request Received";
 
-    const contentHTML = `
-      <div style="font-family:Arial,sans-serif;color:#333;padding:20px;">
-        <h2>Hi ${user.name},</h2>
-        <p>We have received your request for a <strong>${type}</strong> on order <strong>${orderNumber}</strong>.</p>
-        <p><strong>Reason provided:</strong> ${reason}</p>
-        <p>We’ll get back to you shortly. If you have any questions, you may reach to us through our contact form or <a href="mailto:arcanashopng@gmail.com">email us</a>.</p>
-        <p><strong>Note:</strong> Shipping fees for returns are covered by the customer.</p>
-        <h3>Order Details</h3>
-        ${orderDetails}
-        <p><strong>Shipping Address:</strong> ${shippingAddress.street}, ${shippingAddress.city}, ${shippingAddress.state}, ${shippingAddress.country}</p>
-        <p><strong>Phone:</strong> ${phoneNumber}</p>
-        <p><strong>Total Paid:</strong> $${totalPrice.toFixed(2)} ($${(totalPrice - shippingFee).toFixed(2)} + $${shippingFee.toFixed(2)} shipping)</p>
-        <p style="margin-top:30px;">Best Regards,<br>The Arcana Team</p>
+    const content = `
+      <div class="animate-fade-up delay-1">
+        <div class="heading">${type === "exchange" ? "Exchange" : "Return"} <span class="heading-accent">Request</span></div>
+        <div class="subheading">We've received your ${type} request for order #${orderNumber}.</div>
+      </div>
+      <div class="content animate-fade-up delay-2">
+        <p>Hi ${user.name},</p>
+        <p>Reason: <em style="color: #8B6A4E; font-style: italic;">${reason}</em></p>
+        <div class="info-box animate-fade-up delay-3">
+          <p><strong style="font-family: 'Playfair Display', serif;">What Happens Next:</strong></p>
+          <div style="margin-top: 16px;">
+            <div class="step"><div class="step-num">1</div><div class="step-text">We'll review your request within 48 hours</div></div>
+            <div class="step"><div class="step-num">2</div><div class="step-text">You'll receive a ${type} shipping label via email</div></div>
+            <div class="step"><div class="step-num">3</div><div class="step-text">${type === "exchange" ? "Your replacement will be shipped once we receive the original item" : "Once received, your refund processes within 5–7 business days"}</div></div>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="info-box animate-fade-up">
+          <p><strong style="font-family: 'Playfair Display', serif;">Order Details:</strong><br>
+          <span style="color: #3d3025;">
+            Order #${orderNumber}<br>
+            Shipping Address: ${shippingAddress?.street || ""}, ${shippingAddress?.city || ""}, ${shippingAddress?.state || ""}, ${shippingAddress?.country || ""}<br>
+            Phone: ${phoneNumber || "N/A"}<br>
+            Total Paid: $${totalPrice.toFixed(2)} ($${(totalPrice - shippingFee).toFixed(2)} + $${shippingFee.toFixed(2)} shipping)
+          </span></p>
+        </div>
+        <p class="small">Note: Shipping fees for returns are covered by the customer. Questions? <a href="mailto:support@mail.shop-arcana.store">support@mail.shop-arcana.store</a></p>
       </div>
     `;
 
-    const footerHTML = `
-      <hr>
-      <p style="margin:0 0 8px;">Arcana — Designed with intention.</p>
-      <p style="margin:0;">
-        Need help? Reply to this email or contact us at
-        <a href="mailto:arcanashopng@gmail.com" style="color:#000; text-decoration:none;">arcanashopng@gmail.com</a>
-      </p>
-      <p style="margin:0;">© ${new Date().getFullYear()} Arcana. All rights reserved.</p>
-    `;
-
-    sendEmail({
+    await sendEmail({
       to: user.email,
       cc: ["arcanashopng@gmail.com", "nwagudavidisaac@gmail.com"],
-      subject: `${type} Request Received — Order ${orderNumber}`,
-      html: baseEmailTemplate(`${type} Request Received`, contentHTML, footerHTML)
+      subject: `Arcana ${title} — #${orderNumber}`,
+      html: baseEmailTemplate(content, title),
     });
   } catch (err) {
     console.error("❌ sendReturnRequestEmail error:", err.message);

@@ -1,7 +1,7 @@
-// newsletterJob.js
 const cron = require("node-cron");
 const Subscriber = require("./models/Subscriber");
-const sendNewsletterEmail = require("./utils/mailer");
+const { sendEmail } = require("./utils/emailService");
+const { baseEmailTemplate } = require("./utils/mailer");
 
 // Run on 13th September at 12:00 WAT
 cron.schedule(
@@ -12,29 +12,31 @@ cron.schedule(
 
       for (const sub of subs) {
         try {
-          await sendNewsletterEmail(
-            sub.email,
-            "Arcana is Live! 🎉",
-            `
-            <h1>Arcana is now live! 🎉</h1>
-            <p>Thank you for subscribing.</p>
-            <a href="https://www.shop-arcana.store"
-              style="
-                display:inline-block;
-                padding:10px 30px;
-                background:#59493b;
-                color:#fff;
-                text-decoration:none;
-                border-radius:4px;
-                margin:20px 0;
-              "
-            >Visit Arcana</a>
-            <hr />
-            <p style="font-size:12px;color:#888;text-align:center;">
-              © 2025 Arcana. All rights reserved.
-            </p>
-            `
-          );
+          const content = `
+            <div class="animate-fade-up delay-1">
+              <div class="heading">The Inner <span class="heading-accent">Circle</span></div>
+              <div class="subheading">Your monthly dose of intention, craft, and timeless design.</div>
+            </div>
+            <div class="content animate-fade-up delay-2">
+              <p>This month's highlights:</p>
+              <ul>
+                <li>Behind the scenes at the Arcana atelier</li>
+                <li>Early access to our upcoming drop</li>
+                <li>Styling notes from the studio</li>
+              </ul>
+              <div class="divider"></div>
+              <div class="quote">"The best things in life are the people we love, the places we've been, and the memories we've made along the way."</div>
+              <div class="btn-wrap">
+                <a href="https://www.shop-arcana.store" class="btn">Visit Arcana</a>
+              </div>
+            </div>
+          `;
+
+          await sendEmail({
+            to: sub.email,
+            subject: "Arcana Newsletter — Designed With Intention",
+            html: baseEmailTemplate(content, "Arcana Newsletter"),
+          });
         } catch (err) {
           console.error(`❌ Failed to send to ${sub.email}`);
         }

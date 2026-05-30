@@ -19,52 +19,58 @@ const sendContactMessage = async (req, res) => {
     const fullName = `${firstName} ${middleName || ""} ${lastName}`.trim();
     const formattedMessage = message.replace(/\n/g, "<br>");
 
-    const messageBoxHTML = `
-      <div style="background:#f0e6dc;padding:15px;border-radius:5px;margin:15px 0;color:#4b3f36;font-family:Arial,sans-serif;">
-        ${formattedMessage}
+    // Admin Email
+    const adminContent = `
+      <div class="animate-fade-up delay-1">
+        <div class="heading">New Contact <span class="heading-accent">Enquiry</span></div>
+        <div class="subheading">A message has arrived through the Arcana contact form.</div>
+      </div>
+      <div class="info-box animate-fade-up delay-2">
+        <p><strong style="font-family: 'Playfair Display', serif;">From:</strong><br>
+        <span style="color: #3d3025;">
+          ${fullName}<br>
+          ${email}<br>
+          ${enquiry ? `Enquiry Type: ${enquiry}` : ""}
+        </span></p>
+      </div>
+      <div class="content animate-fade-up delay-3">
+        <p><strong style="font-family: 'Playfair Display', serif;">Message:</strong></p>
+        <div style="background: #ffffff; padding: 24px; margin: 16px 0; border-left: 4px solid #59493b; box-shadow: 0 4px 20px rgba(89,73,59,0.06);">
+          <p style="margin: 0; font-size: 14px; line-height: 1.75; color: #3d3025;">${formattedMessage}</p>
+        </div>
+      </div>
+      <div class="content animate-fade-up">
+        <p class="small">Subject: ${subject || "No Subject"}</p>
       </div>
     `;
 
-    const commonFooter = `
-      <hr>
-      <p style="margin:0 0 8px;">Arcana — Designed with intention.</p>
-      <p style="margin:0;">
-        Need help? Reply to this email or contact us at
-        <a href="mailto:arcanashopng@gmail.com" style="color:#000;text-decoration:none;">arcanashopng@gmail.com</a>
-      </p>
-      <p style="margin:0;">© ${new Date().getFullYear()} Arcana. All rights reserved.</p>
-    `;
-
-    // Admin Email
-    const adminContent = `
-      <h3>New Contact Enquiry</h3>
-      <p><strong>Full Name:</strong> ${fullName}</p>
-      <p><strong>Email:</strong> ${email}</p>
-      <p><strong>Enquiry Type:</strong> ${enquiry || "Not specified"}</p>
-      <p><strong>Message:</strong></p>
-      ${messageBoxHTML}
-    `;
-
-    sendEmail({
+    await sendEmail({
       to: ["nwagudavidisaac@gmail.com", "arcanashopng@gmail.com"],
       subject: `New Contact Form Submission: ${subject || "No Subject"}`,
-      html: baseEmailTemplate("New Contact Enquiry", adminContent, commonFooter)
+      html: baseEmailTemplate(adminContent, "New Contact Enquiry"),
     });
 
     // User Confirmation
     const userContent = `
-      <p>Hi ${firstName},</p>
-      <p>Thank you for contacting <strong>Arcana</strong>.</p>
-      <p>We've received your message and will get back to you within <strong>2 working days</strong>.</p>
-      <p><strong>Your Message:</strong></p>
-      ${messageBoxHTML}
-      <p>Best regards,<br>The Arcana Team</p>
+      <div class="animate-fade-up delay-1">
+        <div class="heading">Message <span class="heading-accent">Received</span></div>
+        <div class="subheading">Thank you for reaching out, ${firstName}.</div>
+      </div>
+      <div class="content animate-fade-up delay-2">
+        <p>We've received your message and hold it with the same attention we give every detail of our craft. A response will reach you within <strong>2 working days</strong>.</p>
+        <div class="divider"></div>
+        <div class="info-box animate-fade-up delay-3">
+          <p><strong>Your Message:</strong></p>
+          <p style="margin-top: 12px; font-size: 14px; line-height: 1.75; color: #3d3025;">${formattedMessage}</p>
+        </div>
+        <p class="small">For urgent matters, contact us directly at <a href="mailto:support@mail.shop-arcana.store">support@mail.shop-arcana.store</a></p>
+      </div>
     `;
 
-    sendEmail({
+    await sendEmail({
       to: email,
-      subject: "We've received your message! 🤎",
-      html: baseEmailTemplate("Message Received", userContent, commonFooter)
+      subject: "Arcana — We've Received Your Message",
+      html: baseEmailTemplate(userContent, "Message Received"),
     });
 
     return res.status(200).json({

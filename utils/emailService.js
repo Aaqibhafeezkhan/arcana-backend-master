@@ -2,7 +2,7 @@ const { Resend } = require("resend");
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const logoUrl = "https://res.cloudinary.com/db8mcyukl/image/upload/v1768945790/logo_brkxgk.png";
+const LOGO_URL = "https://res.cloudinary.com/db8mcyukl/image/upload/v1768945790/logo_brkxgk.png";
 
 // ====================== PREMIUM BASE TEMPLATE (Arcana Brown/White Theme) ======================
 const baseEmailTemplate = (content, title) => {
@@ -104,9 +104,7 @@ const baseEmailTemplate = (content, title) => {
     <tr><td align="center" style="padding: 40px 16px; background: #1a1410;">
       <div class="wrapper">
         <div class="header animate-fade">
-          <a href="https://shop-arcana.store">
-            <img src="${LOGO_URL}" alt="Arcana" class="animate-scale delay-1" />
-          </a>
+          <img src="${LOGO_URL}" alt="Arcana" class="animate-scale delay-1" />
           <div class="tagline animate-fade-up delay-2">Designed With Intention</div>
           <div class="header-line animate-fade delay-3"></div>
         </div>
@@ -115,9 +113,7 @@ const baseEmailTemplate = (content, title) => {
         </div>
         <div class="footer animate-fade">
           <div class="footer-divider"></div>
-          <a href="https://shop-arcana.store">
-            <img src="${LOGO_URL}" alt="Arcana" />
-          </a>
+          <img src="${LOGO_URL}" alt="Arcana" />
           <div class="tagline-small">Designed With Intention</div>
           <div class="social">
             <a href="https://instagram.com/arcana.pz" title="Instagram">${SOCIAL.instagram}</a>
@@ -128,6 +124,7 @@ const baseEmailTemplate = (content, title) => {
           <div class="social-label">Follow The Journey</div>
           <div class="footer-divider"></div>
           <p>© ${new Date().getFullYear()} Arcana. All rights reserved.</p>
+          <p>support@mail.shop-arcana.store</p>
         </div>
       </div>
     </td></tr>
@@ -135,23 +132,25 @@ const baseEmailTemplate = (content, title) => {
 </body>
 </html>`;
 };
-async function sendEmail({ to, subject, html, cc }) {
+
+const sendEmail = async ({ to, subject, html, cc }) => {
   try {
-    const response = await resend.emails.send({
+    const options = {
       from: process.env.EMAIL_FROM || "Arcana <support@mail.shop-arcana.store>",
       to,
-      cc,
       subject,
       html,
       reply_to: "arcanashopng@gmail.com",
-    });
+    };
+    if (cc) options.cc = cc;
 
+    const response = await resend.emails.send(options);
     console.log("✅ Email sent:", response.id);
     return response;
   } catch (error) {
     console.error("❌ Email send failed:", error);
     throw error;
   }
-}
+};
 
-module.exports = { sendEmail, baseEmailTemplate };
+module.exports = { sendEmail, resend, baseEmailTemplate, LOGO_URL };

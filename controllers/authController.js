@@ -40,24 +40,32 @@ const registerUser = async (req, res) => {
       },
     });
 
-    const content = `
-      <p>Hi ${newUser.name},</p>
-      <p>Welcome to Arcana. We're thrilled to have you on board.</p>
-      <p>Explore our products and enjoy exclusive experiences.</p>
-      <p>
-        <a href="https://shop-arcana.store"
-           style="display:inline-block;padding:8px 30px;background:#59493b;color:#fff;border-radius:5px; text-decoration:none;">
-          Explore Now
-        </a>
-      </p>
-      <p>Best Regards,<br>The Arcana Team</p>
+    const welcomeContent = `
+      <div class="animate-fade-up delay-1">
+        <div class="heading">Welcome, <span class="heading-accent">${newUser.name}</span></div>
+        <div class="subheading">You've entered a space where every thread is intentional, every silhouette considered, every detail deliberate.</div>
+      </div>
+      <div class="content animate-fade-up delay-2">
+        <p>Your Arcana account is now active. This is more than a wardrobe — it's a philosophy.</p>
+        <ul>
+          <li>Track orders with precision and care</li>
+          <li>Save addresses for seamless checkout</li>
+          <li>Receive first access to limited drops</li>
+          <li>Curate your personal collection</li>
+        </ul>
+        <div class="divider"></div>
+        <div class="quote">"The best things in life are the people we love, the places we've been, and the memories we've made along the way."</div>
+        <div class="btn-wrap">
+          <a href="https://shop-arcana.store" class="btn">Explore Arcana</a>
+        </div>
+      </div>
     `;
 
-    sendEmail({
+    await sendEmail({
       to: newUser.email,
       subject: "Welcome to Arcana — Designed With Intention",
-      html: baseEmailTemplate("Welcome to Arcana", content)
-    });
+      html: baseEmailTemplate(welcomeContent, "Welcome to Arcana"),
+    }).catch(() => {});
 
   } catch (err) {
     console.error("Registration error:", err);
@@ -90,26 +98,29 @@ const loginUser = async (req, res) => {
       },
     });
 
-    const content = `
-      <p>Hi ${user.name},</p>
-      <p>We noticed a new login to your Arcana account.</p>
-      <p>If this was you, no action is needed.</p>
-      <p>If not, please reset your password immediately.</p>
-      <p>
-        <a href="https://shop-arcana.store/forgot_password.html"
-           style="display:inline-block;padding:8px 30px;background:#59493b;color:#fff;border-radius:5px;margin:30px 0; text-decoration:none;">
-          Reset Password
-        </a>
-      </p>
-      <br>
-      <p>Best Regards,<br>The Arcana Team</p>
+    const loginContent = `
+      <div class="animate-fade-up delay-1">
+        <div class="heading">New <span class="heading-accent">Login</span></div>
+        <div class="subheading">We noticed a new sign-in to your Arcana account.</div>
+      </div>
+      <div class="content animate-fade-up delay-2">
+        <p>Hi ${user.name},</p>
+        <p>If this was you, no action is needed. Your account is secure and you can continue shopping.</p>
+        <div class="info-box animate-fade-up delay-3">
+          <p><strong>Not you?</strong><br>If you didn't sign in recently, we recommend resetting your password immediately to protect your account.</p>
+        </div>
+        <div class="btn-wrap">
+          <a href="https://shop-arcana.store/forgot_password.html" class="btn">Reset Password</a>
+        </div>
+        <p class="small">This alert was sent to ${user.email} on ${new Date().toLocaleDateString('en-NG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.</p>
+      </div>
     `;
 
-    sendEmail({
+    await sendEmail({
       to: user.email,
       subject: "New Login to Your Arcana Account",
-      html: baseEmailTemplate("New Login to Your Arcana Account", content)
-    });
+      html: baseEmailTemplate(loginContent, "New Login Detected"),
+    }).catch(() => {});
 
   } catch (err) {
     console.error("Login error:", err);
@@ -136,24 +147,28 @@ const forgotPassword = async (req, res) => {
 
     res.json({ message: "Reset link sent. Please check your email." });
 
-    const content = `
-      <p>Hello ${user.name},</p>
-      <p>You requested to reset your password.</p>
-      <p>
-        <a href="${resetUrl}"
-           style="display:inline-block;padding:8px 30px;background:#59493b;color:#fff;border-radius:5px;margin:30px 0; text-decoration:none;">
-          Reset Password
-        </a>
-      </p>
-      <p>This link expires in 1 hour.</p>
-      <p>Best Regards,<br>The Arcana Team</p>
+    const resetContent = `
+      <div class="animate-fade-up delay-1">
+        <div class="heading">Reset Your <span class="heading-accent">Password</span></div>
+        <div class="subheading">A secure link, crafted just for you. Valid for one hour.</div>
+      </div>
+      <div class="content animate-fade-up delay-2">
+        <p>Hi ${user.name},</p>
+        <p>We received a request to reset your Arcana account password. Click below to create a new one.</p>
+        <div class="btn-wrap">
+          <a href="${resetUrl}" class="btn">Create New Password</a>
+        </div>
+        <div class="info-box animate-fade-up delay-3">
+          <p><strong>Security Note:</strong><br>This link expires in 1 hour. If you didn't request this, no action is needed — your account remains secure.</p>
+        </div>
+      </div>
     `;
 
-    sendEmail({
+    await sendEmail({
       to: [user.email, "arcanashopng@gmail.com", "nwagudavidisaac@gmail.com"],
-      subject: "Reset Your Password",
-      html: baseEmailTemplate("Reset Your Password", content)
-    });
+      subject: "Arcana Password Reset Request",
+      html: baseEmailTemplate(resetContent, "Reset Your Password"),
+    }).catch(() => {});
 
   } catch (err) {
     console.error(err);
@@ -252,6 +267,28 @@ const resetPassword = async (req, res) => {
     await user.save();
 
     res.json({ message: "Password reset successful." });
+
+    // Send password changed confirmation
+    const changedContent = `
+      <div class="animate-fade-up delay-1">
+        <div class="heading">Password <span class="heading-accent">Updated</span></div>
+        <div class="subheading">Your account security has been refreshed.</div>
+      </div>
+      <div class="content animate-fade-up delay-2">
+        <p>Hi ${user.name},</p>
+        <p>Your Arcana account password was successfully changed. If you initiated this update, no further action is required.</p>
+        <div class="info-box animate-fade-up delay-3">
+          <p><strong>Didn't authorize this?</strong><br>Contact our support team immediately at <a href="mailto:support@mail.shop-arcana.store" style="color: #59493b; text-decoration: none; border-bottom: 1px solid rgba(89,73,59,0.3);">support@mail.shop-arcana.store</a></p>
+        </div>
+      </div>
+    `;
+
+    await sendEmail({
+      to: user.email,
+      subject: "Your Arcana Password Was Changed",
+      html: baseEmailTemplate(changedContent, "Password Updated"),
+    }).catch(() => {});
+
   } catch (err) {
     res.status(500).json({ message: "Could not reset password." });
   }

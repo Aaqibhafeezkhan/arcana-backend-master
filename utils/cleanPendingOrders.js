@@ -26,51 +26,64 @@ cron.schedule("* * * * *", async () => {
     const adminList = expiredOrders
       .map(
         (order) => `
-        <li>
-          <strong>Order ID:</strong> ${order.orderNumber}<br/>
-          <strong>User:</strong> ${order.user?.name || "Unknown"} (${order.user?.email || "N/A"})<br/>
-          <strong>Created:</strong> ${order.createdAt.toLocaleString()}
-        </li>
+        <tr class="animate-fade-up">
+          <td style="padding: 14px 0; border-bottom: 1px solid rgba(89,73,59,0.08); font-size: 14px; color: #3d3025;">
+            <strong style="font-family: 'Playfair Display', serif;">#${order.orderNumber}</strong><br>
+            <span style="font-size: 12px; color: #8B6A4E;">${order.user?.name || "Unknown"} — ${order.user?.email || "N/A"}</span>
+          </td>
+          <td style="padding: 14px 0; border-bottom: 1px solid rgba(89,73,59,0.08); font-size: 13px; color: #8B6A4E; text-align: right;">
+            ${order.createdAt.toLocaleDateString('en-NG', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+          </td>
+        </tr>
       `
       )
       .join("");
 
-    const commonFooter = `
-      <hr>
-      <p style="margin:0 0 8px;">Arcana — Designed with intention.</p>
-      <p style="margin:0;">
-        Need help? Reply to this email or contact us at
-        <a href="mailto:arcanashopng@gmail.com" style="color:#000; text-decoration:none;">arcanashopng@gmail.com</a>
-      </p>
-      <p style="margin:0;">© 2025 Arcana. All rights reserved.</p>
-    `;
-
     const adminContent = `
-      <h2>⏰ Expired Pending Orders Deleted</h2>
-      <p>${expiredOrders.length} pending order(s) were removed after 10 minutes:</p>
-      <ul>${adminList}</ul>
+      <div class="animate-fade-up delay-1">
+        <div class="heading">Expired Orders <span class="heading-accent">Cleared</span></div>
+        <div class="subheading">${expiredOrders.length} pending order(s) were automatically removed after the 10-minute payment window.</div>
+      </div>
+      <table class="order-table" style="margin-top: 28px;">
+        <thead><tr><th>Order</th><th style="text-align: right;">Created</th></tr></thead>
+        <tbody>${adminList}</tbody>
+      </table>
+      <div class="content animate-fade-up">
+        <p class="small">These orders have been deleted from the database and inventory has been restored.</p>
+      </div>
     `;
 
-    sendEmail({
+    await sendEmail({
       to: ADMIN_EMAILS,
       subject: "⏰ Expired Pending Orders Deleted",
-      html: baseEmailTemplate("Expired Pending Orders Deleted", adminContent, commonFooter)
+      html: baseEmailTemplate(adminContent, "Expired Orders Cleared"),
     });
 
     for (const order of expiredOrders) {
       if (!order.user?.email) continue;
 
       const userContent = `
-        <p>Hi ${order.user.name || "there"},</p>
-        <p>Your order with ID <strong>${order.orderNumber}</strong> was automatically canceled because it wasn’t paid within <strong>10 minutes</strong>.</p>
-        <p>If this was a mistake, you may place the order again on our website.</p>
-        <p>Best Regards,<br>Arcana Team</p>
+        <div class="animate-fade-up delay-1">
+          <div class="heading">Order <span class="heading-accent">Expired</span></div>
+          <div class="subheading">Your order #${order.orderNumber} was not completed within the payment window.</div>
+        </div>
+        <div class="content animate-fade-up delay-2">
+          <p>Hi ${order.user.name || "there"},</p>
+          <p>We reserved your selections for 10 minutes, but the payment window has now closed. Order <strong>#${order.orderNumber}</strong> has been automatically released.</p>
+          <div class="info-box animate-fade-up delay-3">
+            <p><strong>This was a mistake?</strong><br>No worries — you can return to our store and place a fresh order at any time. Your items are still available (subject to stock).</p>
+          </div>
+          <div class="btn-wrap">
+            <a href="https://shop-arcana.store" class="btn">Shop Arcana</a>
+          </div>
+          <p class="small">Questions? Reach us at <a href="mailto:support@mail.shop-arcana.store">support@mail.shop-arcana.store</a></p>
+        </div>
       `;
 
-      sendEmail({
+      await sendEmail({
         to: order.user.email,
         subject: "❌ Your Order Has Expired",
-        html: baseEmailTemplate("Order Expired", userContent, commonFooter)
+        html: baseEmailTemplate(userContent, "Order Expired"),
       });
     }
   } catch (err) {
