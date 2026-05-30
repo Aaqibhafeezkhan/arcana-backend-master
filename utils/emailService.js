@@ -25,9 +25,9 @@ const baseEmailTemplate = (content, title) => {
     @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-    .animate-fade-up { animation: fadeInUp 0.8s ease-out forwards; opacity: 0; }
-    .animate-fade { animation: fadeIn 1s ease-out forwards; opacity: 0; }
-    .animate-scale { animation: scaleIn 0.6s ease-out forwards; opacity: 0; }
+    .animate-fade-up { animation: fadeInUp 0.8s ease-out forwards; }
+    .animate-fade { animation: fadeIn 1s ease-out forwards; }
+    .animate-scale { animation: scaleIn 0.6s ease-out forwards; }
     .delay-1 { animation-delay: 0.15s; }
     .delay-2 { animation-delay: 0.3s; }
     .delay-3 { animation-delay: 0.45s; }
