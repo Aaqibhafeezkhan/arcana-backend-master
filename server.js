@@ -17,6 +17,7 @@ const contactRoutes = require("./routes/contactRoutes");
 const userRoutes = require("./routes/userRoutes");
 const returnRoutes = require("./routes/returnRoutes");
 const newsletterRoutes = require("./routes/newsletterRoutes");
+const adminRoutes = require('./routes/adminRoutes');
 
 const fileUpload = require("express-fileupload");
 const path = require("path");
@@ -67,7 +68,7 @@ app.use("/api/contact", contactRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/returns", returnRoutes); // ✅ FIXED (no collision)
 app.use("/api/newsletter", newsletterRoutes);
-
+app.use("/api/admin", adminRoutes);
 // =======================
 // HEALTH CHECK
 // =======================
