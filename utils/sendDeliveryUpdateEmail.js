@@ -39,7 +39,7 @@ module.exports = async function sendDeliveryUpdateEmail(order) {
         <div class="content animate-fade-up delay-3">
           <p>Your package is in transit and should arrive within ${deliveryTime}. Use your tracking number above to follow its journey.</p>
           <div class="divider"></div>
-          <p class="small">Need to modify your delivery details? Contact us immediately at <a href="mailto:support@mail.shop-arcana.store">support@mail.shop-arcana.store</a></p>
+          <p class="small">Need to modify your delivery details? Contact us immediately at <a href="mailto:arcanashopng@gmail.com">arcanashopng@gmail.com</a></p>
         </div>
       `;
     } else if (deliveryStage === "Delivered") {

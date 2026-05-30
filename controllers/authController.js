@@ -278,7 +278,7 @@ const resetPassword = async (req, res) => {
         <p>Hi ${user.name},</p>
         <p>Your Arcana account password was successfully changed. If you initiated this update, no further action is required.</p>
         <div class="info-box animate-fade-up delay-3">
-          <p><strong>Didn't authorize this?</strong><br>Contact our support team immediately at <a href="mailto:support@mail.shop-arcana.store" style="color: #59493b; text-decoration: none; border-bottom: 1px solid rgba(89,73,59,0.3);">support@mail.shop-arcana.store</a></p>
+          <p><strong>Didn't authorize this?</strong><br>Contact our support team immediately at <a href="mailto:arcanashopng@gmail.com" style="color: #59493b; text-decoration: none; border-bottom: 1px solid rgba(89,73,59,0.3);">arcanashopng@gmail.com</a></p>
         </div>
       </div>
     `;

@@ -42,7 +42,7 @@ module.exports = async function sendReturnRequestEmail(order, reason, type) {
             Total Paid: $${totalPrice.toFixed(2)} ($${(totalPrice - shippingFee).toFixed(2)} + $${shippingFee.toFixed(2)} shipping)
           </span></p>
         </div>
-        <p class="small">Note: Shipping fees for returns are covered by the customer. Questions? <a href="mailto:support@mail.shop-arcana.store">support@mail.shop-arcana.store</a></p>
+        <p class="small">Note: Shipping fees for returns are covered by the customer. Questions? <a href="mailto:arcanashopng@gmail.com">arcanashopng@gmail.com</a></p>
       </div>
     `;
 

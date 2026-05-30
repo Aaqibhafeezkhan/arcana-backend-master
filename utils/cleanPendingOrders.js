@@ -76,7 +76,7 @@ cron.schedule("* * * * *", async () => {
           <div class="btn-wrap">
             <a href="https://shop-arcana.store" class="btn">Shop Arcana</a>
           </div>
-          <p class="small">Questions? Reach us at <a href="mailto:support@mail.shop-arcana.store">support@mail.shop-arcana.store</a></p>
+          <p class="small">Questions? Reach us at <a href="mailto:arcanashopng@gmail.com">arcanashopng@gmail.com</a></p>
         </div>
       `;
 

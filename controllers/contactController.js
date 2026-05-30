@@ -63,7 +63,7 @@ const sendContactMessage = async (req, res) => {
           <p><strong>Your Message:</strong></p>
           <p style="margin-top: 12px; font-size: 14px; line-height: 1.75; color: #3d3025;">${formattedMessage}</p>
         </div>
-        <p class="small">For urgent matters, contact us directly at <a href="mailto:support@mail.shop-arcana.store">support@mail.shop-arcana.store</a></p>
+        <p class="small">For urgent matters, contact us directly at <a href="mailto:arcanashopng@gmail.com">arcanashopng@gmail.com</a></p>
       </div>
     `;
 

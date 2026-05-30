@@ -78,9 +78,9 @@ const baseEmailTemplate = (content, title) => {
     .footer img { width: 100px; height: auto; display: block; margin: 0 auto 20px; filter: brightness(0) invert(1) opacity(0.85); }
     .footer .tagline-small { font-size: 10px; letter-spacing: 4px; color: rgba(245,240,235,0.35); text-transform: uppercase; margin-bottom: 28px; font-weight: 400; }
     .footer p { font-size: 12px; color: rgba(245,240,235,0.4); margin: 6px 0; line-height: 1.7; }
-    .footer .social { margin-top: 28px; display: flex; justify-content: center; gap: 24px; align-items: center; }
-    .footer .social a { color: rgba(245,240,235,0.5); text-decoration: none; display: inline-flex; align-items: center; justify-content: center; transition: all 0.3s ease; padding: 8px; border: 1px solid rgba(245,240,235,0.1); width: 40px; height: 40px; }
-    .footer .social a:hover { color: #f5f0eb; border-color: rgba(245,240,235,0.4); transform: translateY(-3px); }
+    .footer .social { margin-top: 28px; display: inline-flex; justify-content: center; gap: 24px; align-items: center; }
+    .footer .social a { color: rgba(245,240,235,0.5); text-decoration: none; display: inline-flex; align-items: center; justify-content: center; transition: all 0.3s ease; padding: 8px; width: 40px; height: 40px; }
+    .footer .social a:hover { color: #f5f0eb; transform: translateY(-3px); }
     .footer .social a img { width: 22px; height: 22px; display: block; filter: brightness(0) invert(1); }
     .footer .social-label { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: rgba(245,240,235,0.25); margin-top: 20px; font-weight: 500; }
     .footer-divider { height: 1px; background: linear-gradient(90deg, transparent, rgba(139,106,78,0.2), transparent); margin: 28px auto; max-width: 160px; }
