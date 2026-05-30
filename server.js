@@ -1,79 +1,89 @@
-const express = require('express');
-const dotenv = require('dotenv');
-const cors = require('cors');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-const morgan = require('morgan');
-const fileUpload = require('express-fileupload');
-const cookieParser = require('cookie-parser');
-const connectDB = require('./config/db');
+// ✅ Must be very first
+require("dotenv").config();
+require("./newsletterJob");
 
-// Load env vars
-dotenv.config();
+console.log("Server starting...");
 
-// Connect to database
+const express = require("express");
+const cors = require("cors");
+const connectDB = require("./config/db");
+
+const authRoutes = require("./routes/authRoutes");
+const orderRoutes = require("./routes/orderRoutes");
+const paystackRoutes = require("./routes/paystackRoutes");
+const productRoutes = require("./routes/productRoutes");
+const cartRoutes = require("./routes/cartRoutes");
+const contactRoutes = require("./routes/contactRoutes");
+const userRoutes = require("./routes/userRoutes");
+const returnRoutes = require("./routes/returnRoutes");
+const newsletterRoutes = require("./routes/newsletterRoutes");
+
+const fileUpload = require("express-fileupload");
+const path = require("path");
+const morgan = require("morgan");
+
+// ✅ DB
 connectDB();
 
 const app = express();
 
-// Security middleware
-app.use(helmet());
+// ✅ CORS (safe default)
+app.use(
+  cors({
+    origin: "https://shop-arcana.store",     // ← your exact live domain (no *)
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: false,
+    optionsSuccessStatus: 204
+  })
+);
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later',
-});
-app.use('/api/', limiter);
-
-// CORS
-app.use(cors({
-  origin: process.env.CLIENT_URL || 'https://shop-arcana.store',
-  credentials: true,
-}));
-
-// Body parser
+// ✅ Body parsing
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
 
-// File upload
-app.use(fileUpload({ useTempFiles: true }));
+// ✅ File uploads (Cloudinary-compatible)
+app.use(
+  fileUpload({
+    useTempFiles: false,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB safety
+  })
+);
 
-// Logger
-app.use(morgan('dev'));
+// ✅ Logging
+app.use(morgan("dev"));
 
-// Routes
-app.use('/api/auth', require('./routes/authRoutes'));
-app.use('/api/user', require('./routes/userRoutes'));
-app.use('/api/products', require('./routes/productRoutes'));
-app.use('/api/cart', require('./routes/cartRoutes'));
-app.use('/api/orders', require('./routes/orderRoutes'));
-app.use('/api/paystack', require('./routes/paystackRoutes'));
-app.use('/api/contact', require('./routes/contactRoutes'));
-app.use('/api/newsletter', require('./routes/newsletterRoutes'));
-app.use('/api/addresses', require('./routes/addressRoutes'));
-app.use('/api/returns', require('./routes/returnRoutes'));
-app.use('/api/admin', require('./routes/adminRoutes'));
+// ✅ Static uploads (if any local files exist)
+app.use("/uploads", express.static(path.join(__dirname, "/uploads")));
 
-// Health check
-app.get('/api/ping', (req, res) => {
-  res.status(200).json({ message: 'Server is running' });
+// =======================
+// ROUTES
+// =======================
+app.use("/api/auth", authRoutes);
+app.use("/api/orders", orderRoutes);
+app.use("/api/cart", cartRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/paystack", paystackRoutes);
+app.use("/api/contact", contactRoutes);
+app.use("/api/user", userRoutes);
+app.use("/api/returns", returnRoutes); // ✅ FIXED (no collision)
+app.use("/api/newsletter", newsletterRoutes);
+
+// =======================
+// HEALTH CHECK
+// =======================
+app.get("/api/ping", (req, res) => {
+  res.status(200).send("Arcana backend is alive");
 });
 
-// Error handler
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(err.status || 500).json({
-    message: err.message || 'Internal Server Error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
-  });
-});
+// =======================
+// BACKGROUND JOBS
+// =======================
+require("./utils/cleanPendingOrders");
 
-// Background jobs
-require('./utils/cleanPendingOrders')();
-require('./newsletterJob');
-
+// =======================
+// START SERVER
+// =======================
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});

@@ -1,69 +1,89 @@
-const { sendEmail } = require('./emailService');
-const { baseEmailTemplate } = require('./mailer');
+const { sendEmail, baseEmailTemplate } = require("./emailService");
 
-const sendDeliveryUpdateEmail = async (order, user, deliveryStage, newOrderId) => {
-  let title, content;
+module.exports = async function sendDeliveryUpdateEmail(order) {
+  try {
+    const {
+      user,
+      deliveryStage,
+      orderNumber,
+      shippingAddress,
+      totalPrice,
+      products,
+      shippingFee = 0,
+      newOrderId,
+    } = order;
 
-  if (deliveryStage === 'Shipped') {
-    title = 'Your Arcana Order Has Shipped';
-    content = `
-      <div class="animate-fade-up delay-1">
-        <div class="heading">In <span class="heading-accent">Transit</span></div>
-        <div class="subheading">Your Arcana order is now on its way to you, ${user.name}.</div>
+    if (!user?.email) return;
+
+    const isNigerian = shippingAddress?.country?.toLowerCase() === "nigeria";
+
+    const deliveryTime =
+      deliveryStage === "Shipped"
+        ? isNigerian ? "10–15 business days" : "2–3 weeks"
+        : "It was delivered to your address";
+
+    let subject = `Your Order ${orderNumber} update`;
+    if (deliveryStage === "Shipped") subject = `📦 Your Order ${orderNumber} has been shipped`;
+    if (deliveryStage === "Delivered") subject = `✅ Your Order ${orderNumber} has been delivered`;
+
+    const orderDetails = products
+      .map(
+        (p) => `
+        <div class="product" style="display:flex;gap:15px;align-items:center;margin-bottom:15px;animation:fadeIn 0.5s ease forwards;">
+          <img src="${p.image}" alt="${p.title}" style="width:120px;border-radius:5px;" />
+          <div class="product-info">
+            <strong>${p.title}</strong> (${p.size}) — Qty: ${p.quantity}
+          </div>
+        </div>
+      `
+      )
+      .join("");
+
+    const contentHTML = `
+
+      <div class="status-banner" style="background:#f7d19b;padding:12px;text-align:center;font-weight:bold;border-radius:5px;margin:20px 0;animation:slideIn 0.8s ease forwards;">
+        📦 Order ${deliveryStage}!
       </div>
-      <div class="status-wrap animate-scale delay-2"><span class="status-badge shipped">SHIPPED</span></div>
-      <div class="info-box animate-fade-up delay-2">
-        <p><strong style="font-family: 'Playfair Display', serif; font-size: 16px;">Order #${order.orderNumber}</strong><br>
-        <span style="color: #8B6A4E; font-size: 13px;">Tracking: ${order.trackingNumber || 'Will be updated shortly'}</span></p>
-      </div>
-      <div class="content animate-fade-up delay-3">
-        <p>Your package is in transit and should arrive within 3–5 business days. Use your tracking number above to follow its journey.</p>
-        <div class="divider"></div>
-        <p class="small">Need to modify your delivery details? Contact us immediately at <a href="mailto:support@mail.shop-arcana.store">support@mail.shop-arcana.store</a></p>
-      </div>
+
+      <h3>Hi ${user.name}</h3>
+
+      <p>Your order <strong>${orderNumber}</strong> has been <strong>${deliveryStage.toLowerCase()}</strong>.</p>
+
+      ${deliveryStage === "Exchanged" ? `<p>Your new Order ID is: <strong>${newOrderId || "Pending"}</strong></p>` : ""}
+
+      <h2>Order Details</h2>
+      ${orderDetails}
+
+      <p>
+        <a href="https://shop-arcana.store/order_status.html?orderId=${orderNumber}" style="display:inline-block;padding:10px 30px;background:#59493b;color:#fff;border-radius:5px;text-decoration:none;">
+          Track My Order
+        </a>
+      </p>
+
+      <p><strong>Delivery:</strong> ${deliveryTime}</p>
+      <p><strong>Shipped to:</strong> ${shippingAddress.street}, ${shippingAddress.city}, ${shippingAddress.state}, ${shippingAddress.country}</p>
+      <p><strong>Products Total:</strong> $${(totalPrice - shippingFee).toFixed(2)}</p>
+      <p><strong>Shipping Fee:</strong> $${shippingFee.toFixed(2)}</p>
+      <p><strong>Total Paid:</strong> $${totalPrice.toFixed(2)}</p>
+
+      <p style="margin-top:30px;">Thank you for shopping at Arcana! 🤎</p>
+      <p>Best Regards,<br>The Arcana Team</p>
     `;
-  } else if (deliveryStage === 'Delivered') {
-    title = 'Your Arcana Order Was Delivered';
-    content = `
-      <div class="animate-fade-up delay-1">
-        <div class="heading">Delivered <span class="heading-accent">With Care</span></div>
-        <div class="subheading">Your Arcana order has arrived, ${user.name}.</div>
-      </div>
-      <div class="status-wrap animate-scale delay-2"><span class="status-badge delivered">DELIVERED</span></div>
-      <div class="info-box animate-fade-up delay-2">
-        <p><strong style="font-family: 'Playfair Display', serif; font-size: 16px;">Order #${order.orderNumber}</strong><br>
-        <span style="color: #8B6A4E; font-size: 13px;">Delivered on ${new Date().toLocaleDateString('en-NG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span></p>
-      </div>
-      <div class="content animate-fade-up delay-3">
-        <p>We hope these pieces find their place in your story. Each item was crafted with intention — wear them with the same care that went into making them.</p>
-        <div class="divider"></div>
-        <p class="small">Share your look with <strong style="color: #59493b;">@arcana.ng</strong> or reply to this email with your thoughts.</p>
-      </div>
+
+    const footerHTML = `
+      <hr />
+      <p>Arcana — Designed with intention.</p>
+      <p>Need help? Contact <a href="mailto:arcanashopng@gmail.com" style="color:#000;text-decoration:none;">arcanashopng@gmail.com</a></p>
+      <p>© ${new Date().getFullYear()} Arcana. All rights reserved.</p>
     `;
-  } else if (deliveryStage === 'Exchanged') {
-    title = 'Your Arcana Exchange Is Ready';
-    content = `
-      <div class="animate-fade-up delay-1">
-        <div class="heading">Exchange <span class="heading-accent">Processed</span></div>
-        <div class="subheading">Your exchange request has been processed, ${user.name}.</div>
-      </div>
-      <div class="info-box animate-fade-up delay-2">
-        <p><strong style="font-family: 'Playfair Display', serif; font-size: 16px;">New Order #${newOrderId}</strong><br>
-        <span style="color: #8B6A4E; font-size: 13px;">Your replacement order is now being prepared.</span></p>
-      </div>
-      <div class="content animate-fade-up delay-3">
-        <p>We've processed your exchange and your new items are being prepared with the same care as every Arcana piece.</p>
-      </div>
-    `;
+
+    sendEmail({
+      to: user.email,
+      cc: ["arcanashopng@gmail.com", "nwagudavidisaac@gmail.com"],
+      subject,
+      html: baseEmailTemplate(`Order ${deliveryStage}`, contentHTML, footerHTML)
+    });
+  } catch (err) {
+    console.error("❌ sendDeliveryUpdateEmail error:", err.message);
   }
-
-  const html = baseEmailTemplate(content, title);
-
-  await sendEmail({
-    to: user.email,
-    subject: title,
-    html,
-  });
 };
-
-module.exports = sendDeliveryUpdateEmail;

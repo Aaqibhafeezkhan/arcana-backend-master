@@ -7,7 +7,7 @@ const storage = new CloudinaryStorage({
   params: {
     folder: 'arcana-profile-pictures',
     allowed_formats: ['jpg', 'jpeg', 'png'],
-    transformation: [{ width: 500, height: 500, crop: 'limit' }],
+    transformation: [{ width: 500, height: 500, crop: 'limit' }]
   },
 });
 

@@ -4,8 +4,11 @@ const sendOrderEmails = require('../utils/sendOrderEmail');
 const orderSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   orderNumber: { type: String, required: true, unique: true },
-  status: { type: String, default: 'Pending' }, // Payment status
-  newOrderId: { type: String, default: null },
+  status: { type: String, default: 'Pending' }, // For payment status
+  newOrderId: {
+  type: String,
+  default: null
+  },
   deliveryStage: {
     type: String,
     enum: ['Reviewing', 'Shipped', 'Delivered', 'Returned', 'Exchanged'],

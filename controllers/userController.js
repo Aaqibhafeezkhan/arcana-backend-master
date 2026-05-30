@@ -1,67 +1,40 @@
+
 const User = require('../models/User');
 const Order = require('../models/Order');
-const cloudinary = require('../utils/cloudinary');
+const Address = require('../models/Address');
+const path = require('path');
+const fs = require('fs');
 
 const getUserProfile = async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id).select('-password');
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    res.status(200).json(user);
-  } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
+  res.json(req.user);
 };
 
-const getUserOrders = async (req, res) => {
-  try {
-    const orders = await Order.find({ user: req.user._id }).sort({ createdAt: -1 });
-    res.status(200).json(orders);
-  } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+const updateProfilePicture = async (req, res) => {
+  if (!req.files || !req.files.profilePicture) {
+    return res.status(400).json({ message: 'No file uploaded' });
   }
+
+  const file = req.files.profilePicture;
+  const filename = `${req.user._id}${path.extname(file.name)}`;
+  const filepath = path.join(__dirname, '../uploads', filename);
+
+  file.mv(filepath, async (err) => {
+    if (err) return res.status(500).json({ message: 'Upload failed' });
+    req.user.profilePicture = `/uploads/${filename}`;
+    await req.user.save();
+    res.json({ message: 'Profile picture updated', url: req.user.profilePicture });
+  });
 };
 
-const getUserAddresses = async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    res.status(200).json(user.addresses || []);
-  } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
+const getOrders = async (req, res) => {
+  const orders = await Order.find({ user: req.user._id });
+  res.json(orders);
 };
 
-const uploadProfilePicture = async (req, res) => {
-  try {
-    if (!req.file) return res.status(400).json({ message: 'No image uploaded' });
+const getAddresses = async (req, res) => {
+  const user = await User.findById(req.user._id);
+res.json(user.addresses || []);
 
-    const result = await cloudinary.uploader.upload(req.file.path, {
-      folder: 'arcana-profile-pictures',
-      width: 500,
-      height: 500,
-      crop: 'limit',
-    });
-
-    const user = await User.findByIdAndUpdate(
-      req.user._id,
-      { profilePicture: result.secure_url },
-      { new: true }
-    );
-
-    res.status(200).json({ message: 'Profile picture updated', imageUrl: result.secure_url });
-  } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
 };
 
-// Admin: get all users
-const getAllUsers = async (req, res) => {
-  try {
-    const users = await User.find().select('-password');
-    res.status(200).json(users);
-  } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
-};
-
-module.exports = { getUserProfile, getUserOrders, getUserAddresses, uploadProfilePicture, getAllUsers };
+module.exports = { getUserProfile, updateProfilePicture, getOrders, getAddresses };

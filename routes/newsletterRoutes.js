@@ -1,26 +1,20 @@
-const express = require('express');
+// routes/newsletterRoutes.js
+const express = require("express");
 const router = express.Router();
-const { protect, admin } = require('../middlewares/authMiddleware');
-const Subscriber = require('../models/Subscriber');
+const Subscriber = require("../models/Subscriber");
 
-router.post('/', async (req, res) => {
+router.post("/subscribe", async (req, res) => {
   try {
     const { email } = req.body;
-    const existing = await Subscriber.findOne({ email });
-    if (existing) return res.status(400).json({ message: 'Already subscribed' });
-    const subscriber = await Subscriber.create({ email });
-    res.status(201).json(subscriber);
-  } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
-});
+    if (!email) return res.status(400).json({ message: "Email is required" });
 
-router.get('/', protect, admin, async (req, res) => {
-  try {
-    const subscribers = await Subscriber.find().sort({ subscribedAt: -1 });
-    res.status(200).json(subscribers);
-  } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    await Subscriber.create({ email });
+    res.json({ message: "Subscription successful!" });
+  } catch (err) {
+    if (err.code === 11000) {
+      return res.status(400).json({ message: "You are already subscribed!" });
+    }
+    res.status(500).json({ message: "Server error" });
   }
 });
 

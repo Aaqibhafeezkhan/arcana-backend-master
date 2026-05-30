@@ -1,16 +1,24 @@
 const express = require('express');
 const router = express.Router();
-const { registerUser, loginUser, forgotPassword, resetPassword, resendVerification } = require('../controllers/authController');
-const { protect } = require('../middlewares/authMiddleware');
+const { forgotPassword, resetPassword } = require('../controllers/authController');
 
+const {
+  registerUser,
+  loginUser,
+  getProfile,
+  uploadProfilePic,
+  updateProfile,
+  changePassword,
+} = require('../controllers/authController');
+
+const { protect } = require('../middlewares/authMiddleware'); // ✅ Correct import
 router.post('/register', registerUser);
 router.post('/login', loginUser);
-router.post('/logout', protect, (req, res) => {
-  res.clearCookie('token', { httpOnly: true, sameSite: 'strict' });
-  res.status(200).json({ message: 'Logged out successfully' });
-});
 router.post('/forgot-password', forgotPassword);
-router.post('/reset-password', resetPassword);
-router.post('/resend-verification', resendVerification);
+router.post('/reset-password/:token', resetPassword);
+router.get('/profile', protect, getProfile);
+router.post('/upload-profile-pic', protect, uploadProfilePic);
+router.put('/profile', protect, updateProfile);
+router.put('/change-password', protect, changePassword); // for password change
 
 module.exports = router;

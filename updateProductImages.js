@@ -1,40 +1,57 @@
 const mongoose = require('mongoose');
+const dotenv = require('dotenv');
 const Product = require('./models/Product');
 
-// Standalone script to update product images
-// Run: node updateProductImages.js
+dotenv.config();
 
-const updateImages = async () => {
+const updates = [
+  {
+    name: "Mystic Tee",
+    image: "https://res.cloudinary.com/db8mcyukl/image/upload/vXYZ/mystic_tee.jpg"
+  },
+  {
+    name: "Shadow Tee",
+    image: "https://res.cloudinary.com/db8mcyukl/image/upload/v1750802824/shadow_tee_ofrork.png"
+  },
+  {
+    name: "Shadow Shorts",
+    image: "https://res.cloudinary.com/db8mcyukl/image/upload/v1750802843/shadow_shorts_vu6p57.png"
+  },
+  {
+    name: "Shadow Flex Hoodie",
+    image: "https://res.cloudinary.com/db8mcyukl/image/upload/v1750802862/Shadow_Flex_xqy1u0.png"
+  },
+  {
+    name: "Astral Set",
+    image: "https://res.cloudinary.com/db8mcyukl/image/upload/v1750802876/astral_set_lnkqaz.png"
+  }
+];
+
+async function run() {
   try {
     await mongoose.connect(process.env.MONGO_URI);
-
-    // Example: Update specific product images
-    // Modify this to match your actual product names and image URLs
-    const updates = [
-      { name: 'Arcana Crest Tee', image: 'https://res.cloudinary.com/db8mcyukl/image/upload/v1/arcana/crest-tee.jpg' },
-      { name: 'Bold Sweatpants', image: 'https://res.cloudinary.com/db8mcyukl/image/upload/v1/arcana/bold-sweats.jpg' },
-    ];
+    console.log('Connected to MongoDB ✅');
 
     for (const update of updates) {
-      await Product.findOneAndUpdate(
+      const res = await Product.findOneAndUpdate(
         { name: update.name },
-        { image: update.image }
+        { image: update.image },
+        { new: true }
       );
-      console.log(`Updated image for ${update.name}`);
+
+      if (res) {
+        console.log(`✅ Updated: ${res.name}`);
+      } else {
+        console.log(`❌ Not found: ${update.name}`);
+      }
     }
 
-    console.log('Product images updated successfully');
-    process.exit(0);
-  } catch (error) {
-    console.error('Error updating images:', error);
-    process.exit(1);
+    mongoose.disconnect();
+    console.log('Update completed and disconnected from DB ✅');
+  } catch (err) {
+    console.error('❌ Error:', err);
   }
-};
-
-// Only run if executed directly
-if (require.main === module) {
-  require('dotenv').config();
-  updateImages();
 }
 
-module.exports = updateImages;
+run();
+//   node updateProductImages.js });

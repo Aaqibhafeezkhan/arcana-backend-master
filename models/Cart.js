@@ -5,7 +5,8 @@ const cartItemSchema = new mongoose.Schema({
   quantity: { type: Number, required: true, default: 1 },
   price: { type: Number, required: true },
   size: { type: String, required: true }
-}, { _id: true });
+}, { _id: true }); // ✅ ENABLE _id for each item
+
 
 const cartSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
