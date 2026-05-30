@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+*.log
+ngrok.exe
+.DS_Store
+coverage/
+uploads/
+.vscode/
+.idea/
