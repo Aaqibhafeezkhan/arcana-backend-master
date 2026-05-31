@@ -64,4 +64,43 @@ const updateUserRole = async (req, res) => {
   }
 };
 
-module.exports = { getDashboardStats, getAllOrders, getAllUsers, updateUserRole };
+const sendCustomEmail = async (req, res) => {
+  try {
+    const { to, subject, body } = req.body;
+    if (!to || !subject || !body) {
+      return res.status(400).json({ message: 'Recipient, subject, and body are required' });
+    }
+
+    let sendEmail;
+    // Try existing mailer utilities first
+    try {
+      const mailer = require('../utils/mailer');
+      sendEmail = mailer.sendEmail || mailer;
+    } catch {
+      try {
+        const emailService = require('../utils/emailService');
+        sendEmail = emailService.sendEmail || emailService;
+      } catch {
+        // Fallback to Resend directly
+        const { Resend } = require('resend');
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        sendEmail = async ({ to, subject, html }) => {
+          await resend.emails.send({
+            from: 'Arcana <onboarding@resend.dev>',
+            to,
+            subject,
+            html
+          });
+        };
+      }
+    }
+
+    await sendEmail({ to, subject, html: body });
+    res.json({ message: `Email sent to ${to}` });
+  } catch (err) {
+    console.error('Custom email error:', err);
+    res.status(500).json({ message: 'Failed to send email', error: err.message });
+  }
+};
+
+module.exports = { getDashboardStats, getAllOrders, getAllUsers, updateUserRole, sendCustomEmail };
