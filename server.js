@@ -26,7 +26,7 @@ const app = express();
 // ===== FIXED CORS: Added credentials: true =====
 app.use(cors({
   origin: 'https://shop-arcana.store',
-  credentials: true,  // <-- REQUIRED for cookies & auth credentials
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));

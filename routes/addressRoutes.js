@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middlewares/authMiddleware');
+const { protect } = require('../middlewares/authMiddleware');
 
-router.get('/', authMiddleware, (req, res) => {
+router.get('/', protect, (req, res) => {
   res.json([
     { street: '123 Arcana Lane, Magic City' }
   ]);
