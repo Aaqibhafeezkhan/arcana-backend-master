@@ -1,14 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const { createProduct, getProductById, getAllProducts } = require('../controllers/productController');
+const { protect, admin } = require('../middlewares/authMiddleware');
+const {
+  createProduct,
+  getAllProducts,
+  getProductById,
+  updateProduct,
+  deleteProduct
+} = require('../controllers/productController');
 
-// POST /api/products - Create a product
-router.post('/', createProduct);
-
-// GET /api/products - Fetch all products
+router.post('/', protect, admin, createProduct);
 router.get('/', getAllProducts);
-
-// ✅ NEW: GET /api/products/:id - Fetch a product by ID
 router.get('/:id', getProductById);
+router.put('/:id', protect, admin, updateProduct);
+router.delete('/:id', protect, admin, deleteProduct);
 
 module.exports = router;
