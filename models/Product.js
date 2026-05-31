@@ -1,4 +1,3 @@
-// models/Product.js
 const mongoose = require('mongoose');
 
 const productSchema = new mongoose.Schema({
@@ -6,8 +5,10 @@ const productSchema = new mongoose.Schema({
   category: { type: String },
   description: { type: String },
   price: { type: Number, required: true },
-  image: { type: String }, // image file path or URL
-  inStock: { type: Boolean, default: true },
+  image: { type: String },
+  stock: { type: Number, default: 0 },
+  sizes: [{ type: String }],
+  featured: { type: Boolean, default: false },
   brand: { type: String, default: 'Arcana' },
 }, { timestamps: true });
 
