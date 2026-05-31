@@ -5,6 +5,17 @@ const Newsletter = require('../models/Newsletter');
 const Subscriber = require('../models/Subscriber');
 const { sendEmail, baseEmailTemplate } = require('../utils/emailService');
 
+// Helper: format plain text into proper HTML for the template
+function formatEmailContent(text) {
+  const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const paragraphs = escaped.split('\n\n');
+  const htmlParagraphs = paragraphs.map(p => {
+    const withBreaks = p.replace(/\n/g, '<br>');
+    return withBreaks.trim() ? `<p>${withBreaks}</p>` : '';
+  }).filter(Boolean);
+  return `<div class="content">${htmlParagraphs.join('\n')}</div>`;
+}
+
 const getDashboardStats = async (req, res) => {
   try {
     const orders = await Order.find();
@@ -70,7 +81,7 @@ const updateUserRole = async (req, res) => {
   }
 };
 
-// POST /api/admin/email/send — FIXED: wraps in Arcana template
+// POST /api/admin/email/send — FIXED: wraps in Arcana template, formats body
 const sendCustomEmail = async (req, res) => {
   try {
     const { to, subject, body } = req.body;
@@ -83,8 +94,9 @@ const sendCustomEmail = async (req, res) => {
       return res.status(400).json({ message: 'Invalid email address' });
     }
 
-    // Wrap in Arcana template
-    const wrappedHtml = baseEmailTemplate(body, subject);
+    // Format body into proper HTML (user may include HTML, so don't escape)
+    const formattedBody = `<div class="content">${body.replace(/\n/g, '<br>')}</div>`;
+    const wrappedHtml = baseEmailTemplate(formattedBody, subject);
 
     await sendEmail({
       to,
@@ -112,7 +124,8 @@ const sendNewsletter = async (req, res) => {
       return res.status(400).json({ message: 'No subscribers to send to' });
     }
 
-    const wrappedHtml = baseEmailTemplate(content, subject);
+    const formattedContent = formatEmailContent(content);
+    const wrappedHtml = baseEmailTemplate(formattedContent, subject);
     let sentCount = 0;
 
     for (const sub of subscribers) {
@@ -128,10 +141,9 @@ const sendNewsletter = async (req, res) => {
       }
     }
 
-    // Track in database
     await Newsletter.create({
       subject,
-      content,
+      content: formattedContent,
       recipientCount: sentCount,
       sentBy: req.user._id
     });

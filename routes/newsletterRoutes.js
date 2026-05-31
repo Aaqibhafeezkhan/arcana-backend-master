@@ -5,6 +5,17 @@ const Newsletter = require('../models/Newsletter');
 const { protect, admin } = require('../middlewares/authMiddleware');
 const { sendEmail, baseEmailTemplate } = require('../utils/emailService');
 
+// Helper: format plain text into proper HTML for the template
+function formatEmailContent(text) {
+  const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const paragraphs = escaped.split('\n\n');
+  const htmlParagraphs = paragraphs.map(p => {
+    const withBreaks = p.replace(/\n/g, '<br>');
+    return withBreaks.trim() ? `<p>${withBreaks}</p>` : '';
+  }).filter(Boolean);
+  return `<div class="content">${htmlParagraphs.join('\n')}</div>`;
+}
+
 // Subscribe (public)
 router.post('/subscribe', async (req, res) => {
   try {
@@ -32,7 +43,7 @@ router.get('/', protect, admin, async (req, res) => {
   }
 });
 
-// Send newsletter (admin only) — FIXED: uses baseEmailTemplate, tracks in Newsletter model
+// Send newsletter (admin only) — FIXED: uses baseEmailTemplate, tracks in DB, formats content
 router.post('/send', protect, admin, async (req, res) => {
   try {
     const { subject, content } = req.body;
@@ -45,8 +56,9 @@ router.post('/send', protect, admin, async (req, res) => {
       return res.status(400).json({ message: 'No subscribers to send to' });
     }
 
-    // Wrap content in Arcana template
-    const html = baseEmailTemplate(content, subject);
+    // Format plain text into proper HTML structure
+    const formattedContent = formatEmailContent(content);
+    const html = baseEmailTemplate(formattedContent, subject);
 
     let sentCount = 0;
     for (const sub of subscribers) {
@@ -65,7 +77,7 @@ router.post('/send', protect, admin, async (req, res) => {
     // Track in database
     await Newsletter.create({
       subject,
-      content,
+      content: formattedContent,
       recipientCount: sentCount,
       sentBy: req.user._id
     });
