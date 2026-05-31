@@ -10,6 +10,10 @@ const productSchema = new mongoose.Schema({
   sizes: [{ type: String }],
   featured: { type: Boolean, default: false },
   brand: { type: String, default: 'Arcana' },
+  material: { type: String },
+  weight: { type: String },
+  fit: { type: String },
+  care: { type: String }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Product', productSchema);
