@@ -47,8 +47,10 @@ app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/address', addressRoutes);
 
-cleanPendingOrders();
-newsletterJob();
+// ===== FIXED: Removed function calls =====
+// cleanPendingOrders.js and newsletterJob.js schedule their cron jobs
+// immediately when required. They do not export functions, so calling
+// them throws "is not a function". The require() lines above are enough.
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
