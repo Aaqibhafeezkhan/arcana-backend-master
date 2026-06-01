@@ -8,6 +8,9 @@ const orderSchema = new mongoose.Schema({
   products: [
     {
       product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+      name: { type: String },           // ← product snapshot name
+      title: { type: String },          // ← alternate name field
+      image: { type: String },          // ← product snapshot image URL
       quantity: { type: Number, default: 1 },
       price: { type: Number },
       size: { type: String }

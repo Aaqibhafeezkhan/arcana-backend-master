@@ -9,19 +9,19 @@ async function sendOrderEmails({ user, order, exchangeRate = 1547.3 }) {
     const itemsHtml = order.products.map(p => `
       <tr class="animate-fade-up">
         <td style="display: flex; align-items: center; gap: 18px;">
-          <img src="${p.image}" alt="${p.title || p.name}" class="product-img" style="width: 72px; height: 72px; object-fit: cover; border: 1px solid rgba(89,73,59,0.08);">
+          <img src="${p.image || 'https://res.cloudinary.com/db8mcyukl/image/upload/v1768945790/logo_brkxgk.png'}" alt="${p.name || p.title || 'Product'}" class="product-img" style="width: 72px; height: 72px; object-fit: cover; border: 1px solid rgba(89,73,59,0.08);">
           <div>
-            <div style="font-weight: 600; color: #2a2119; font-size: 14.5px; letter-spacing: -0.3px;">${p.title || p.name}</div>
-            <div style="font-size: 11px; color: #8B6A4E; margin-top: 6px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 500;">Size ${p.size}</div>
+            <div style="font-weight: 600; color: #2a2119; font-size: 14.5px; letter-spacing: -0.3px;">${p.name || p.title || 'Arcana Product'}</div>
+            <div style="font-size: 11px; color: #8B6A4E; margin-top: 6px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 500;">Size ${p.size || 'N/A'}</div>
           </div>
         </td>
-        <td style="text-align: center; color: #8B6A4E; font-weight: 500;">${p.quantity}</td>
-        <td style="text-align: right; font-weight: 600; color: #2a2119; font-family: 'Playfair Display', serif; font-size: 15px;">₦${(p.price * exchangeRate * p.quantity).toFixed(2)}</td>
+        <td style="text-align: center; color: #8B6A4E; font-weight: 500;">${p.quantity || 1}</td>
+        <td style="text-align: right; font-weight: 600; color: #2a2119; font-family: 'Playfair Display', serif; font-size: 15px;">₦${((p.price || 0) * exchangeRate * (p.quantity || 1)).toFixed(2)}</td>
       </tr>
     `).join('');
 
-    const subtotal = order.products.reduce((sum, p) => sum + (p.price * exchangeRate * p.quantity), 0);
-    const shippingNaira = (order.shippingFee * exchangeRate).toFixed(2);
+    const subtotal = order.products.reduce((sum, p) => sum + ((p.price || 0) * exchangeRate * (p.quantity || 1)), 0);
+    const shippingNaira = ((order.shippingFee || 0) * exchangeRate).toFixed(2);
     const totalNaira = (subtotal + parseFloat(shippingNaira)).toFixed(2);
 
     const isNigeria = address.country?.toLowerCase().includes("nigeria");
@@ -35,7 +35,7 @@ async function sendOrderEmails({ user, order, exchangeRate = 1547.3 }) {
         <div class="heading">Order <span class="heading-accent">Confirmed</span></div>
         <div class="subheading">Thank you, ${name}. Your pieces are being prepared with the care they deserve.</div>
       </div>
-      <div class="status-wrap animate-scale delay-2"><span class="status-badge">${order.status.toUpperCase()}</span></div>
+      <div class="status-wrap animate-scale delay-2"><span class="status-badge">${(order.status || 'Confirmed').toUpperCase()}</span></div>
       <div class="info-box animate-fade-up delay-2">
         <p><strong style="font-family: 'Playfair Display', serif; font-size: 16px;">Order #${orderId}</strong><br>
         <span style="color: #8B6A4E; font-size: 13px;">${new Date(order.createdAt).toLocaleDateString('en-NG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span></p>
