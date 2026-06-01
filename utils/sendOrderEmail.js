@@ -60,7 +60,7 @@ async function sendOrderEmails({ user, order, exchangeRate = 1547.3 }) {
         <div class="btn-wrap">
           <a href="https://shop-arcana.store/order_status.html?orderId=${orderId}" class="btn">Track My Order</a>
         </div>
-        <p class="small">We'll notify you the moment your order ships. Questions? Reach us at <a href="mailto:support@mail.shop-arcana.store">support@mail.shop-arcana.store</a></p>
+        <p class="small">We'll notify you the moment your order ships. Questions? Reach us at <a href="mailto:arcanashopng@gmail.com">arcanashopng@gmail.com</a></p>
       </div>
     `;
 
