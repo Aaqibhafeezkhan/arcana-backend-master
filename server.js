@@ -25,7 +25,7 @@ const app = express();
 
 // ===== FIXED CORS: Added credentials: true =====
 app.use(cors({
-  origin: 'https://arcana-smoky.vercel.app',
+  origin: 'https://arcana-frontend-two.vercel.app',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
