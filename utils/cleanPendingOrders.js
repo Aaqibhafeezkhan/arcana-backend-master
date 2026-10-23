@@ -7,13 +7,18 @@ const ADMIN_EMAILS = [
   "nwagudavidisaac@gmail.com",
 ];
 
+// Orders that are still Pending after EXPIRY_MINUTES are deleted.
+// 30 minutes gives Paystack enough time to complete the transaction and
+// deliver the webhook before the cron removes the order.
+const EXPIRY_MINUTES = 30;
+
 cron.schedule("* * * * *", async () => {
-  const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+  const cutoff = new Date(Date.now() - EXPIRY_MINUTES * 60 * 1000);
 
   try {
     const expiredOrders = await Order.find({
       status: "Pending",
-      createdAt: { $lt: tenMinutesAgo },
+      createdAt: { $lt: cutoff },
     }).populate("user", "email name");
 
     if (!expiredOrders.length) return;

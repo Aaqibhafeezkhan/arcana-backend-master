@@ -6,12 +6,29 @@ const User = require('../models/User');
 const sendOrderEmails = require('../utils/sendOrderEmail');
 const Cart = require('../models/Cart'); // Add this at the top
 
+// NGN/USD exchange rate used throughout the checkout flow
+const EXCHANGE_RATE = 1547.30;
+
 const initializePayment = async (req, res) => {
-  const { email, amount, reference } = req.body;
+  const { email, reference } = req.body;
+
+  // Compute the charge amount server-side from the stored order rather than
+  // trusting the client-supplied value, which could be tampered with.
+  let amountInKobo;
+  try {
+    const order = await Order.findOne({ orderNumber: reference });
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found for reference' });
+    }
+    amountInKobo = Math.round(order.totalPrice * EXCHANGE_RATE * 100);
+  } catch (err) {
+    console.error('⚠️ Could not look up order for amount computation:', err.message);
+    return res.status(500).json({ message: 'Could not initialize payment' });
+  }
 
   const params = JSON.stringify({
     email,
-    amount,
+    amount: amountInKobo,
     reference,
     callback_url: 'https://shop-arcana.store/index.html',
   });
@@ -60,13 +77,29 @@ console.log("📬 Paystack webhook received:", event.event);
       const order = await Order.findOne({ orderNumber: reference }).populate('user');
 
       if (!order) {
-        console.warn(`⚠️ Order not found for reference: ${reference}`);
-        return res.status(404).json({ message: 'Order not found' });
+        // The order may have been deleted by the expiry cron (30-minute window).
+        // Return 200 so Paystack does not keep retrying this webhook.
+        console.warn(`⚠️ Webhook: order not found for reference ${reference} — possibly expired before payment completed`);
+        return res.status(200).json({ message: 'Webhook received' });
       }
 
       if (order.status === 'Confirmed') {
+        // Idempotency guard — do not re-process or re-send emails.
         console.log(`✅ Order already confirmed: ${reference}`);
         return res.status(200).json({ message: 'Already processed' });
+      }
+
+      // Verify the amount and currency Paystack actually collected
+      const paidAmountKobo = paymentData.amount;
+      const paidCurrency = paymentData.currency;
+      const expectedAmountKobo = Math.round(order.totalPrice * EXCHANGE_RATE * 100);
+
+      if (paidCurrency !== 'NGN' || Math.abs(paidAmountKobo - expectedAmountKobo) > 1) {
+        console.warn(
+          `⚠️ Amount mismatch for ${reference}: ` +
+          `paid ${paidAmountKobo} ${paidCurrency}, expected ${expectedAmountKobo} NGN — order left unconfirmed`
+        );
+        return res.status(200).json({ message: 'Webhook received' });
       }
 
       order.status = 'Confirmed';

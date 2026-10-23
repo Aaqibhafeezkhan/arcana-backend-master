@@ -25,4 +25,18 @@ const admin = (req, res, next) => {
   }
 };
 
-module.exports = { protect, admin };
+// Attach req.user if a valid Bearer token is present; otherwise proceed as unauthenticated.
+const optionalProtect = async (req, res, next) => {
+  if (req.headers.authorization?.startsWith('Bearer')) {
+    try {
+      const token = req.headers.authorization.split(' ')[1];
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      req.user = await User.findById(decoded.id).select('-password');
+    } catch (err) {
+      req.user = null;
+    }
+  }
+  next();
+};
+
+module.exports = { protect, admin, optionalProtect };

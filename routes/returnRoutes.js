@@ -3,19 +3,31 @@ const router = express.Router();
 const Order = require('../models/Order');
 const sendReturnRequestEmail = require('../utils/sendReturnRequestEmail');
 
-// POST /api/orders/return-request
+// POST /api/returns/return-request
+// No session token is required; the caller must provide the email address on the order
+// to prove they are the customer. This prevents arbitrary order IDs being submitted
+// by strangers who do not know the associated email.
 router.post('/return-request', async (req, res) => {
   try {
-    const { orderId, reason, type } = req.body; // type: 'Return' or 'Exchange'
+    const { orderId, reason, type, email } = req.body; // type: 'Return' or 'Exchange'
 
     if (!orderId || !reason || !['Return', 'Exchange'].includes(type)) {
       return res.status(400).json({ message: 'Invalid input' });
+    }
+
+    if (!email || typeof email !== 'string' || !email.trim()) {
+      return res.status(400).json({ message: 'Email address is required' });
     }
 
     const order = await Order.findOne({ orderNumber: orderId }).populate('user', 'name email');
 
     if (!order) {
       return res.status(404).json({ message: 'Invalid Order ID' });
+    }
+
+    // Verify the caller knows the email on the order
+    if (order.user.email.toLowerCase() !== email.trim().toLowerCase()) {
+      return res.status(403).json({ message: 'The email address does not match our records for this order.' });
     }
 
     if (order.status !== 'Confirmed') {

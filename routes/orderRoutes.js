@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const Order = require('../models/Order');
-const authMiddleware = require('../middlewares/authMiddleware');
+const { protect, admin, optionalProtect } = require('../middlewares/authMiddleware');
 const { updateDeliveryStage } = require('../controllers/orderController');
 // POST /api/orders - Create order after payment init
-router.post('/', authMiddleware.protect, async (req, res) => {
+router.post('/', protect, async (req, res) => {
   try {
     const {
       products,
@@ -43,9 +43,9 @@ router.post('/', authMiddleware.protect, async (req, res) => {
 
 
 
-router.put('/by-number/:orderNumber/stage', updateDeliveryStage);
+router.put('/by-number/:orderNumber/stage', protect, admin, updateDeliveryStage);
 
-router.get('/:orderId', async (req, res) => {
+router.get('/:orderId', optionalProtect, async (req, res) => {
   try {
     const { orderId } = req.params;
 
@@ -55,27 +55,43 @@ router.get('/:orderId', async (req, res) => {
       return res.status(404).json({ message: 'Order not found. Please check your Order ID.' });
     }
 
-    // 👇 Add this check for pending status
     if (order.status === 'Pending') {
       return res.status(403).json({ message: 'Order not confirmed. Please complete payment before tracking.' });
     }
 
-    // If confirmed, send order data
+    // Determine whether the caller is the order owner or an admin
+    const isOwner = req.user && order.user._id.toString() === req.user._id.toString();
+    const isAdmin = req.user && req.user.isAdmin;
+
+    if (isOwner || isAdmin) {
+      // Full response for the order owner or an admin
+      return res.json({
+        orderNumber: order.orderNumber,
+        status: order.status,
+        paidAt: order.paidAt || null,
+        createdAt: order.createdAt,
+        deliveryStage: order.deliveryStage,
+        shippingAddress: order.shippingAddress,
+        phoneNumber: order.phoneNumber,
+        totalPrice: order.totalPrice,
+        shippingFee: order.shippingFee,
+        products: order.products,
+        user: {
+          name: order.user.name,
+          email: order.user.email,
+        },
+      });
+    }
+
+    // Public tracking response — no email, phone, or street-level address
     res.json({
       orderNumber: order.orderNumber,
       status: order.status,
-      paidAt: order.paidAt || null,
       createdAt: order.createdAt,
       deliveryStage: order.deliveryStage,
-      shippingAddress: order.shippingAddress,
-      phoneNumber: order.phoneNumber,
       totalPrice: order.totalPrice,
       shippingFee: order.shippingFee,
       products: order.products,
-      user: {
-        name: order.user.name,
-        email: order.user.email,
-      },
     });
   } catch (err) {
     console.error(err);
