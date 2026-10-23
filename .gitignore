@@ -8,3 +8,5 @@ coverage/
 uploads/
 .vscode/
 .idea/
+.claude/
+CLAUDE.md
