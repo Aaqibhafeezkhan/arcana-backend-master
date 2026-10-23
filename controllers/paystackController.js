@@ -62,7 +62,7 @@ const initializePayment = async (req, res) => {
     email,
     amount: amountInKobo,
     reference,
-    callback_url: 'https://shop-arcana.store/index.html',
+    callback_url: 'https://arcana-frontend-two.vercel.app/index.html',
   });
 
   const options = {
@@ -110,7 +110,7 @@ const handleWebhook = async (req, res) => {
     const paidCurrency = paymentData.currency;
 
     try {
-      const order = await Order.findOne({ orderNumber: reference }).populate('user');
+      const order = await Order.findOne({ orderNumber: reference }).populate('user', '-password');
 
       if (!order) {
         // The order may have been deleted by the expiry cron (30-minute window).

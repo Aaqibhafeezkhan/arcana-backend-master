@@ -12,7 +12,7 @@ exports.updateDeliveryStage = async (req, res) => {
   }
 
   try {
-    const order = await Order.findOne({ orderNumber }).populate('user');
+    const order = await Order.findOne({ orderNumber }).populate('user', '-password');
 
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });

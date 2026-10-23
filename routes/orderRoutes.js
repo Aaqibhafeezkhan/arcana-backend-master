@@ -18,7 +18,7 @@ router.post('/', protect, async (req, res) => {
     const orderNumber = reference || `ARC${Date.now()}`;
 
     const isNigeria = shippingAddress?.country?.toLowerCase().includes('nigeria');
-    const shippingFee = isNigeria ? 5 : 20;
+    const shippingFee = isNigeria ? 3.5 : 20;
 
     const fullTotal = totalPrice + shippingFee;
 

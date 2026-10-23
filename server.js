@@ -1,6 +1,7 @@
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
-const dotenv = require('dotenv');
 const morgan = require('morgan');
 const fileUpload = require('express-fileupload');
 const connectDB = require('./config/db');
@@ -17,8 +18,6 @@ const adminRoutes = require('./routes/adminRoutes');
 const addressRoutes = require('./routes/addressRoutes');
 const cleanPendingOrders = require('./utils/cleanPendingOrders');
 const newsletterJob = require('./newsletterJob');
-
-dotenv.config();
 connectDB();
 
 const app = express();
