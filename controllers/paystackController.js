@@ -13,7 +13,7 @@ const initializePayment = async (req, res) => {
     email,
     amount,
     reference,
-    callback_url: 'https://shop-arcana.store/index.html',
+    callback_url: 'https://arcana-frontend-two.vercel.app/index.html',
   });
 
   const options = {
