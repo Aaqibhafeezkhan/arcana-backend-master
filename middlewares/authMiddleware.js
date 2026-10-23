@@ -25,7 +25,11 @@ const admin = (req, res, next) => {
   }
 };
 
-// Attach req.user if a valid Bearer token is present; otherwise proceed as unauthenticated.
+// Attach req.user if a valid, non-expired Bearer token is present.
+// Missing, malformed or expired tokens are silently treated as unauthenticated
+// (req.user stays null) — the handler decides what to return.
+// Never sends a 401, so a user with an expired token can still reach
+// public endpoints such as order tracking.
 const optionalProtect = async (req, res, next) => {
   if (req.headers.authorization?.startsWith('Bearer')) {
     try {
@@ -33,6 +37,7 @@ const optionalProtect = async (req, res, next) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       req.user = await User.findById(decoded.id).select('-password');
     } catch (err) {
+      // Covers TokenExpiredError and JsonWebTokenError — treat as anonymous
       req.user = null;
     }
   }

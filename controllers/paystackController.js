@@ -1,13 +1,43 @@
-const axios = require('axios');
 const crypto = require('crypto');
 const https = require('https');
 const Order = require('../models/Order');
-const User = require('../models/User');
 const sendOrderEmails = require('../utils/sendOrderEmail');
-const Cart = require('../models/Cart'); // Add this at the top
+const Cart = require('../models/Cart');
+const { sendEmail, baseEmailTemplate } = require('../utils/emailService');
+const { orderAmountKobo } = require('../utils/paymentAmount');
 
-// NGN/USD exchange rate used throughout the checkout flow
-const EXCHANGE_RATE = 1547.30;
+const ADMIN_EMAILS = ['arcanashopng@gmail.com', 'nwagudavidisaac@gmail.com'];
+
+// Send an alert to admins when a webhook event cannot be processed normally.
+async function alertAdmins({ reference, paidAmountKobo, paidCurrency, customerEmail, reason }) {
+  const subject = `⚠️ Paystack webhook alert — ${reason}`;
+  const content = `
+    <div class="animate-fade-up delay-1">
+      <div class="heading">Webhook <span class="heading-accent">Alert</span></div>
+      <div class="subheading">${reason}</div>
+    </div>
+    <div class="info-box animate-fade-up delay-2">
+      <p>
+        <strong>Reference:</strong> ${reference}<br>
+        <strong>Paid amount:</strong> ${paidAmountKobo} ${paidCurrency}<br>
+        <strong>Customer email (Paystack):</strong> ${customerEmail || 'N/A'}<br>
+        <strong>Reason:</strong> ${reason}
+      </p>
+    </div>
+    <div class="content animate-fade-up delay-3">
+      <p class="small">This order has been left unconfirmed. No action was taken automatically.</p>
+    </div>
+  `;
+  try {
+    await sendEmail({
+      to: ADMIN_EMAILS,
+      subject,
+      html: baseEmailTemplate(content, subject),
+    });
+  } catch (err) {
+    console.error('❌ Failed to send webhook admin alert:', err.message);
+  }
+}
 
 const initializePayment = async (req, res) => {
   const { email, reference } = req.body;
@@ -15,12 +45,14 @@ const initializePayment = async (req, res) => {
   // Compute the charge amount server-side from the stored order rather than
   // trusting the client-supplied value, which could be tampered with.
   let amountInKobo;
+  let order;
   try {
-    const order = await Order.findOne({ orderNumber: reference });
+    order = await Order.findOne({ orderNumber: reference });
     if (!order) {
-      return res.status(404).json({ message: 'Order not found for reference' });
+      // (improvement d) — do not call Paystack if there is no order to pay for
+      return res.status(404).json({ message: 'Order not found for this reference. Please create an order first.' });
     }
-    amountInKobo = Math.round(order.totalPrice * EXCHANGE_RATE * 100);
+    amountInKobo = orderAmountKobo(order);
   } catch (err) {
     console.error('⚠️ Could not look up order for amount computation:', err.message);
     return res.status(500).json({ message: 'Could not initialize payment' });
@@ -40,8 +72,8 @@ const initializePayment = async (req, res) => {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-      'Content-Type': 'application/json'
-    }
+      'Content-Type': 'application/json',
+    },
   };
 
   const reqPaystack = https.request(options, paystackRes => {
@@ -68,10 +100,14 @@ const handleWebhook = async (req, res) => {
   }
 
   const event = req.body;
-console.log("📬 Paystack webhook received:", event.event);
+  console.log('📬 Paystack webhook received:', event.event);
+
   if (event.event === 'charge.success') {
     const paymentData = event.data;
     const reference = paymentData.reference;
+    const customerEmail = paymentData.customer?.email;
+    const paidAmountKobo = paymentData.amount;
+    const paidCurrency = paymentData.currency;
 
     try {
       const order = await Order.findOne({ orderNumber: reference }).populate('user');
@@ -79,7 +115,9 @@ console.log("📬 Paystack webhook received:", event.event);
       if (!order) {
         // The order may have been deleted by the expiry cron (30-minute window).
         // Return 200 so Paystack does not keep retrying this webhook.
-        console.warn(`⚠️ Webhook: order not found for reference ${reference} — possibly expired before payment completed`);
+        const reason = 'Order not found — possibly expired before payment completed';
+        console.warn(`⚠️ Webhook: ${reason} (ref: ${reference})`);
+        await alertAdmins({ reference, paidAmountKobo, paidCurrency, customerEmail, reason });
         return res.status(200).json({ message: 'Webhook received' });
       }
 
@@ -90,45 +128,38 @@ console.log("📬 Paystack webhook received:", event.event);
       }
 
       // Verify the amount and currency Paystack actually collected
-      const paidAmountKobo = paymentData.amount;
-      const paidCurrency = paymentData.currency;
-      const expectedAmountKobo = Math.round(order.totalPrice * EXCHANGE_RATE * 100);
+      const expectedKobo = orderAmountKobo(order);
 
-      if (paidCurrency !== 'NGN' || Math.abs(paidAmountKobo - expectedAmountKobo) > 1) {
-        console.warn(
-          `⚠️ Amount mismatch for ${reference}: ` +
-          `paid ${paidAmountKobo} ${paidCurrency}, expected ${expectedAmountKobo} NGN — order left unconfirmed`
-        );
+      if (paidCurrency !== 'NGN' || Math.abs(paidAmountKobo - expectedKobo) > 1) {
+        const reason = `Amount or currency mismatch: paid ${paidAmountKobo} ${paidCurrency}, expected ${expectedKobo} NGN`;
+        console.warn(`⚠️ Webhook: ${reason} (ref: ${reference})`);
+        await alertAdmins({ reference, paidAmountKobo, paidCurrency, customerEmail, reason });
         return res.status(200).json({ message: 'Webhook received' });
       }
 
       order.status = 'Confirmed';
       await order.save();
-
       console.log(`📦 Order ${reference} confirmed`);
 
-      // Send emails
+      // Send order-confirmation emails (fire-and-forget, never block the 200 response)
       try {
-        console.log("➡️ Preparing to send confirmation emails...");
         await sendOrderEmails({ user: order.user, order, exchangeRate: 1547.30 });
-        console.log("✅ Emails sent successfully.");
-        console.log(`📧 Email sent for order ${reference}`);
+        console.log(`📧 Confirmation emails sent for order ${reference}`);
       } catch (emailErr) {
-        console.error(`❌ Failed to send emails:`, emailErr);
+        console.error('❌ Failed to send confirmation emails:', emailErr);
       }
 
-      // Clear cart
+      // Clear the user's cart
       try {
-  const cart = await Cart.findOne({ user: order.user._id });
-  if (!cart) {
-    console.warn(`⚠️ No cart found for user ${order.user._id}`);
-  } else {
-    await cart.deleteOne();
-    console.log(`🛒 Cart cleared for user ${order.user._id}`);
-  }
-} catch (err) {
-  console.error("❌ Failed to delete cart:", err);
-}
+        const cart = await Cart.findOne({ user: order.user._id });
+        if (cart) {
+          await cart.deleteOne();
+          console.log(`🛒 Cart cleared for user ${order.user._id}`);
+        }
+      } catch (cartErr) {
+        console.error('❌ Failed to clear cart:', cartErr);
+      }
+
     } catch (err) {
       console.error('❌ Webhook processing error:', err);
     }
@@ -137,7 +168,4 @@ console.log("📬 Paystack webhook received:", event.event);
   res.status(200).json({ message: 'Webhook received' });
 };
 
-module.exports = {
-  initializePayment,
-  handleWebhook,
-};
+module.exports = { initializePayment, handleWebhook };
