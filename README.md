@@ -67,11 +67,12 @@ arcana-backend-master/
 │   ├── returnRoutes.js        /api/returns
 │   └── userRoutes.js          /api/user
 └── utils/
-    ├── cleanPendingOrders.js       Cron — deletes unpaid orders older than 10 min
+    ├── cleanPendingOrders.js       Cron — deletes unpaid orders older than 30 min
     ├── cloudinary.js               Cloudinary v2 client
     ├── emailService.js             Resend client + branded HTML template
     ├── generateToken.js            JWT sign (30-day expiry)
     ├── mailer.js                   Thin wrapper — backward compat
+    ├── paymentAmount.js            Shared helper — converts order total (USD) to Paystack kobo
     ├── sendDeliveryUpdateEmail.js  Delivery stage email (Shipped / Delivered / Exchanged)
     ├── sendOrderEmail.js           Order-confirmed email to customer + admin
     └── sendReturnRequestEmail.js   Return/exchange confirmation email
