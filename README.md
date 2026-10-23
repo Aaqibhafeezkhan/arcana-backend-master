@@ -165,15 +165,15 @@ All paths are prefixed with `/api`.
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | POST | `/` | [auth] | Create order (pending, awaiting payment) |
-| GET | `/:orderId` | — | Get order by order number (blocks Pending status) |
-| PUT | `/by-number/:orderNumber/stage` | — | Update delivery stage (Reviewing / Shipped / Delivered / Returned / Exchanged) |
+| GET | `/:orderId` | optional [auth] | Public: returns status, items, dates, totals. Owner or admin: also returns address, phone, email. |
+| PUT | `/by-number/:orderNumber/stage` | [admin] | Update delivery stage (Reviewing / Shipped / Delivered / Returned / Exchanged) |
 
 ### Paystack — `/api/paystack`
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| POST | `/initialize` | — | Initialize a Paystack transaction |
-| POST | `/webhook` | — | Paystack webhook — confirms order on `charge.success` |
+| POST | `/initialize` | — | Initialize a Paystack transaction; amount is computed server-side from the stored order |
+| POST | `/webhook` | — | Paystack webhook — verifies HMAC signature and paid amount before confirming order |
 
 ### Contact — `/api/contact`
 
@@ -193,7 +193,7 @@ All paths are prefixed with `/api`.
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| POST | `/return-request` | — | Submit a return or exchange request for a confirmed order within 30 days |
+| POST | `/return-request` | — | Submit a return or exchange request. Requires `email` in the request body matching the order's registered email. |
 
 ### Newsletter — `/api/newsletter`
 
@@ -235,12 +235,14 @@ All paths are prefixed with `/api`.
 
 ## Payment Flow
 
-1. Frontend calls `POST /api/paystack/initialize` with `{ email, amount, reference }`.
-2. Server forwards the request to the Paystack API and returns an authorization URL.
+1. Frontend calls `POST /api/paystack/initialize` with `{ email, reference }`.
+2. Server looks up the order by `reference`, computes the amount in kobo server-side (`order.totalPrice × 1547.30 × 100`), and forwards to the Paystack API. Returns an authorization URL.
 3. User completes payment on Paystack's hosted page.
 4. Paystack POSTs a `charge.success` event to `POST /api/paystack/webhook`.
 5. Webhook verifies the HMAC-SHA512 signature against `PAYSTACK_SECRET_KEY`.
-6. On success the order is set to `Confirmed`, order-confirmation emails are sent to the customer and admins, and the user's cart is cleared.
+6. Webhook compares the paid amount and currency (`NGN`) against the expected amount derived from the order. A mismatch is logged and the order is left unconfirmed.
+7. On a valid match, the order is set to `Confirmed`, order-confirmation emails are sent to the customer and admins, and the user's cart is cleared.
+8. Repeated `charge.success` events for an already-confirmed order are acknowledged and silently ignored (idempotency guard).
 
 ---
 
@@ -250,7 +252,7 @@ All paths are prefixed with `/api`.
 The current schedule is hardcoded to **13 September at 12:00 WAT** (`"0 12 13 9 *"`).  
 It fetches all `Subscriber` documents, sends the branded HTML email via Resend, and logs the send in the `Newsletter` collection.
 
-A second cron in [`utils/cleanPendingOrders.js`](utils/cleanPendingOrders.js) runs every minute. It finds orders whose `status` is `Pending` and whose `createdAt` is older than 10 minutes, deletes them, and sends expiry notification emails to the affected customers and to admins.
+A second cron in [`utils/cleanPendingOrders.js`](utils/cleanPendingOrders.js) runs every minute. It finds orders whose `status` is `Pending` and whose `createdAt` is older than 30 minutes, deletes them, and sends expiry notification emails to the affected customers and to admins.
 
 ---
 
