@@ -7,6 +7,7 @@ const { sendEmail, baseEmailTemplate } = require("../utils/emailService");
 // Cloudinary
 const cloudinary = require("cloudinary").v2;
 const streamifier = require("streamifier");
+const { validateRegistrationInput, validateLoginInput } = require("../utils/authValidation");
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -18,7 +19,12 @@ cloudinary.config({
  * REGISTER USER
  */
 const registerUser = async (req, res) => {
-  const { name, email, password } = req.body;
+  let { name, email, password } = req.body;
+  const validationError = validateRegistrationInput({ name, email, password });
+  if (validationError) return res.status(400).json({ message: validationError });
+
+  name = name.trim();
+  email = email.trim();
 
   try {
     const userExists = await User.findOne({ email });
@@ -77,7 +83,11 @@ const registerUser = async (req, res) => {
  * LOGIN USER
  */
 const loginUser = async (req, res) => {
-  const { identifier, password } = req.body;
+  let { identifier, password } = req.body;
+  const validationError = validateLoginInput({ identifier, password });
+  if (validationError) return res.status(400).json({ message: validationError });
+
+  identifier = identifier.trim();
 
   try {
     const user = await User.findOne({ email: identifier });
